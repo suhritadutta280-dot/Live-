@@ -1,0 +1,390 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private user account profile, 18+ age attestation, and demo coin wallet.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "isAdultConfirmed": {
+          "type": "boolean"
+        },
+        "isCreator": {
+          "type": "boolean"
+        },
+        "coinBalance": {
+          "type": "integer"
+        },
+        "diamondBalance": {
+          "type": "integer"
+        },
+        "themePreference": {
+          "type": "string",
+          "enum": ["midnight", "dim"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "photoURL",
+        "isAdultConfirmed",
+        "isCreator",
+        "coinBalance",
+        "diamondBalance",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Creator": {
+      "title": "Creator",
+      "description": "Public 18+ creator channel and live room metadata without PII.",
+      "type": "object",
+      "properties": {
+        "creatorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "handle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_.]+$"
+        },
+        "bio": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 280
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Music", "Talk & Lounge", "Art & Studio", "Gaming"]
+        },
+        "coverUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "roomTitle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "isLive": {
+          "type": "boolean"
+        },
+        "isPublic": {
+          "type": "boolean"
+        },
+        "viewerCount": {
+          "type": "integer"
+        },
+        "followerCount": {
+          "type": "integer"
+        },
+        "diamondTotal": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "creatorId",
+        "ownerUid",
+        "displayName",
+        "handle",
+        "bio",
+        "category",
+        "coverUrl",
+        "roomTitle",
+        "isLive",
+        "isPublic",
+        "viewerCount",
+        "followerCount",
+        "diamondTotal",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FollowRelationship": {
+      "title": "FollowRelationship",
+      "description": "User-to-creator follow relationship stored under the user's following subcollection.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "creatorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "creatorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "creatorHandle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "creatorCategory": {
+          "type": "string",
+          "enum": ["Music", "Talk & Lounge", "Art & Studio", "Gaming"]
+        },
+        "creatorCoverUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "creatorId",
+        "creatorName",
+        "creatorHandle",
+        "creatorCategory",
+        "creatorCoverUrl",
+        "createdAt"
+      ]
+    },
+    "RoomMessage": {
+      "title": "RoomMessage",
+      "description": "Real-time chat or gift announcement message in a creator live room.",
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "creatorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 280
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["chat", "gift"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "messageId",
+        "creatorId",
+        "senderUid",
+        "senderName",
+        "text",
+        "kind",
+        "createdAt"
+      ]
+    },
+    "GiftTransaction": {
+      "title": "GiftTransaction",
+      "description": "Immutable demo coin-to-diamond gift ledger record.",
+      "type": "object",
+      "properties": {
+        "txId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "creatorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "creatorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "giftId": {
+          "type": "string",
+          "enum": ["rose", "crown", "champagne", "gala"]
+        },
+        "giftName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "coinCost": {
+          "type": "integer"
+        },
+        "diamondsCredited": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "txId",
+        "senderUid",
+        "creatorId",
+        "creatorName",
+        "giftId",
+        "giftName",
+        "coinCost",
+        "diamondsCredited",
+        "createdAt"
+      ]
+    },
+    "LiveRoom": {
+      "title": "LiveRoom",
+      "description": "Broadcast room session lifecycle created when a creator goes live.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "creatorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "hostUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "status": {
+          "type": "string",
+          "enum": ["live", "ended"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "roomId",
+        "creatorId",
+        "hostUid",
+        "title",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account document, 18+ confirmation, and demo coin wallet."
+    },
+    "/users/{userId}/following/{creatorId}": {
+      "schema": { "$ref": "#/entities/FollowRelationship" },
+      "description": "Follow relationships between a user and creators they follow."
+    },
+    "/users/{userId}/giftTransactions/{txId}": {
+      "schema": { "$ref": "#/entities/GiftTransaction" },
+      "description": "Immutable ledger of demo gifts sent by the user."
+    },
+    "/creators/{creatorId}": {
+      "schema": { "$ref": "#/entities/Creator" },
+      "description": "Public creator directory and live room state."
+    },
+    "/creators/{creatorId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/RoomMessage" },
+      "description": "Live room chat and gift feed messages for a creator channel."
+    },
+    "/liveRooms/{roomId}": {
+      "schema": { "$ref": "#/entities/LiveRoom" },
+      "description": "Creator live broadcast session lifecycle records."
+    }
+  }
+}

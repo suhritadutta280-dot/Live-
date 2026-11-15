@@ -1,0 +1,395 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email == 'suhritadutta280@gmail.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isValidCategory(category) {
+      return category in ['Music', 'Talk & Lounge', 'Art & Studio', 'Gaming'];
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'displayName', 'photoURL', 'isAdultConfirmed',
+          'isCreator', 'coinBalance', 'diamondBalance', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'displayName', 'photoURL', 'isAdultConfirmed',
+          'isCreator', 'coinBalance', 'diamondBalance', 'themePreference',
+          'createdAt', 'updatedAt'
+        ])
+        && data.uid is string && data.uid == userId && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 64
+        && data.photoURL is string && data.photoURL.size() <= 512
+        && data.isAdultConfirmed is bool
+        && data.isCreator is bool
+        && (!data.isCreator || data.isAdultConfirmed == true)
+        && data.coinBalance is int && data.coinBalance >= 0 && data.coinBalance <= 10000000
+        && data.diamondBalance is int && data.diamondBalance >= 0 && data.diamondBalance <= 100000000
+        && (!('themePreference' in data) || (data.themePreference is string && data.themePreference in ['midnight', 'dim']))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCreator(data, creatorId) {
+      return data.keys().hasAll([
+          'creatorId', 'ownerUid', 'displayName', 'handle', 'bio', 'category',
+          'coverUrl', 'roomTitle', 'isLive', 'isPublic', 'viewerCount',
+          'followerCount', 'diamondTotal', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'creatorId', 'ownerUid', 'displayName', 'handle', 'bio', 'category',
+          'coverUrl', 'roomTitle', 'isLive', 'isPublic', 'viewerCount',
+          'followerCount', 'diamondTotal', 'createdAt', 'updatedAt'
+        ])
+        && data.creatorId is string && data.creatorId == creatorId && isValidId(data.creatorId)
+        && data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 && isValidId(data.ownerUid)
+        && data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 80
+        && data.handle is string && data.handle.size() >= 2 && data.handle.size() <= 40 && data.handle.matches('^[a-zA-Z0-9_.]+$')
+        && data.bio is string && data.bio.size() >= 1 && data.bio.size() <= 280
+        && data.category is string && isValidCategory(data.category)
+        && data.coverUrl is string && data.coverUrl.size() >= 1 && data.coverUrl.size() <= 512
+        && data.roomTitle is string && data.roomTitle.size() >= 2 && data.roomTitle.size() <= 120
+        && data.isLive is bool
+        && data.isPublic is bool
+        && data.viewerCount is int && data.viewerCount >= 0 && data.viewerCount <= 1000000
+        && data.followerCount is int && data.followerCount >= 0 && data.followerCount <= 10000000
+        && data.diamondTotal is int && data.diamondTotal >= 0 && data.diamondTotal <= 100000000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFollow(data, userId, creatorId) {
+      return data.keys().hasAll([
+          'userId', 'creatorId', 'creatorName', 'creatorHandle',
+          'creatorCategory', 'creatorCoverUrl', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'creatorId', 'creatorName', 'creatorHandle',
+          'creatorCategory', 'creatorCoverUrl', 'createdAt'
+        ])
+        && data.userId is string && data.userId == userId && isValidId(data.userId)
+        && data.creatorId is string && data.creatorId == creatorId && isValidId(data.creatorId)
+        && data.creatorName is string && data.creatorName.size() >= 1 && data.creatorName.size() <= 80
+        && data.creatorHandle is string && data.creatorHandle.size() >= 2 && data.creatorHandle.size() <= 40
+        && data.creatorCategory is string && isValidCategory(data.creatorCategory)
+        && data.creatorCoverUrl is string && data.creatorCoverUrl.size() >= 1 && data.creatorCoverUrl.size() <= 512
+        && data.createdAt is timestamp;
+    }
+
+    function isValidRoomMessage(data, creatorId, messageId) {
+      return data.keys().hasAll([
+          'messageId', 'creatorId', 'senderUid', 'senderName', 'text', 'kind', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'messageId', 'creatorId', 'senderUid', 'senderName', 'text', 'kind', 'createdAt'
+        ])
+        && data.messageId is string && data.messageId == messageId && isValidId(data.messageId)
+        && data.creatorId is string && data.creatorId == creatorId && isValidId(data.creatorId)
+        && data.senderUid is string && data.senderUid == request.auth.uid && isValidId(data.senderUid)
+        && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 64
+        && data.text is string && data.text.size() >= 1 && data.text.size() <= 280
+        && data.kind is string && data.kind in ['chat', 'gift']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidGiftTx(data, userId, txId) {
+      return data.keys().hasAll([
+          'txId', 'senderUid', 'creatorId', 'creatorName',
+          'giftId', 'giftName', 'coinCost', 'diamondsCredited', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'txId', 'senderUid', 'creatorId', 'creatorName',
+          'giftId', 'giftName', 'coinCost', 'diamondsCredited', 'createdAt'
+        ])
+        && data.txId is string && data.txId == txId && isValidId(data.txId)
+        && data.senderUid is string && data.senderUid == userId && isValidId(data.senderUid)
+        && data.creatorId is string && isValidId(data.creatorId)
+        && data.creatorName is string && data.creatorName.size() >= 1 && data.creatorName.size() <= 80
+        && data.giftId is string && data.giftId in ['rose', 'crown', 'champagne', 'gala']
+        && data.giftName is string && data.giftName.size() >= 1 && data.giftName.size() <= 40
+        && data.coinCost is int
+        && (
+          (data.giftId == 'rose' && data.coinCost == 10) ||
+          (data.giftId == 'crown' && data.coinCost == 50) ||
+          (data.giftId == 'champagne' && data.coinCost == 250) ||
+          (data.giftId == 'gala' && data.coinCost == 1000)
+        )
+        && data.diamondsCredited is int && data.diamondsCredited == data.coinCost
+        && data.createdAt is timestamp;
+    }
+
+    function isValidLiveRoom(data, roomId) {
+      return data.keys().hasAll([
+          'roomId', 'creatorId', 'hostUid', 'title', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'roomId', 'creatorId', 'hostUid', 'title', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.roomId is string && data.roomId == roomId && isValidId(data.roomId)
+        && data.creatorId is string && isValidId(data.creatorId)
+        && data.hostUid is string && data.hostUid == request.auth.uid && isValidId(data.hostUid)
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 120
+        && data.status is string && data.status in ['live', 'ended']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Admins Registry
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list, create, update, delete: if false;
+    }
+
+    // Private User Profiles & Wallet
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if false;
+
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().coinBalance == 500
+        && incoming().diamondBalance == 0
+        && incoming().isCreator == false
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId) && (
+              // Action 1: Profile / 18+ / Creator / Theme Update
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'displayName', 'photoURL', 'isAdultConfirmed', 'isCreator', 'themePreference', 'updatedAt'
+                ])
+                && (!incoming().isCreator || incoming().isAdultConfirmed == true)
+              ) ||
+              // Action 2: Spend Demo Coins on Gift
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly(['coinBalance', 'updatedAt'])
+                && (existing().coinBalance - incoming().coinBalance) in [10, 50, 250, 1000]
+                && incoming().coinBalance >= 0
+              ) ||
+              // Action 3: Claim Demo Top-Up when low
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly(['coinBalance', 'updatedAt'])
+                && existing().coinBalance < 100
+                && incoming().coinBalance == existing().coinBalance + 250
+              )
+            )
+          )
+        );
+
+      allow delete: if false;
+
+      // User Following Subcollection (Master Gate Pattern)
+      match /following/{creatorId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(creatorId) && (isOwner(userId) || isAdmin());
+        allow list: if isSignedIn() && isOwner(userId) && resource.data.userId == request.auth.uid;
+
+        allow create: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(creatorId)
+          && isOwner(userId)
+          && isValidFollow(incoming(), userId, creatorId)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/creators/$(creatorId));
+
+        allow update: if false;
+
+        allow delete: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(creatorId)
+          && isOwner(userId);
+      }
+
+      // Immutable Gift Ledger Subcollection
+      match /giftTransactions/{txId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(txId) && (isOwner(userId) || isAdmin());
+        allow list: if isSignedIn() && isOwner(userId) && resource.data.senderUid == request.auth.uid;
+
+        allow create: if isVerifiedUser()
+          && isValidId(userId)
+          && isValidId(txId)
+          && isOwner(userId)
+          && isValidGiftTx(incoming(), userId, txId)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/creators/$(incoming().creatorId))
+          && getAfter(/databases/$(database)/documents/users/$(userId)).data.coinBalance ==
+             get(/databases/$(database)/documents/users/$(userId)).data.coinBalance - incoming().coinCost;
+
+        allow update, delete: if false;
+      }
+    }
+
+    // Public Creator Directory & Live Rooms (No PII)
+    match /creators/{creatorId} {
+      allow get: if isValidId(creatorId);
+      allow list: if resource.data.isPublic == true;
+
+      allow create: if isVerifiedUser()
+        && isValidId(creatorId)
+        && isValidCreator(incoming(), creatorId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().followerCount == 0
+        && incoming().diamondTotal == 0
+        && (
+          isAdmin() ||
+          (
+            creatorId == request.auth.uid
+            && incoming().ownerUid == request.auth.uid
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdultConfirmed == true
+          ) ||
+          (
+            creatorId in ['creator_aria', 'creator_julian', 'creator_kael', 'creator_noemi', 'creator_elena']
+            && incoming().ownerUid == 'showcase'
+            && incoming().isPublic == true
+          )
+        );
+
+      allow update: if isVerifiedUser()
+        && isValidId(creatorId)
+        && isValidCreator(incoming(), creatorId)
+        && incoming().creatorId == existing().creatorId
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          // Action 1: Creator Owner Updates Channel / Stream State
+          (
+            existing().ownerUid == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'displayName', 'handle', 'bio', 'category', 'coverUrl',
+              'roomTitle', 'isLive', 'isPublic', 'viewerCount', 'updatedAt'
+            ])
+          ) ||
+          // Action 2: Atomic Follow (+1) paired with /users/{uid}/following/{creatorId}
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['followerCount', 'updatedAt'])
+            && incoming().followerCount == existing().followerCount + 1
+            && !exists(/databases/$(database)/documents/users/$(request.auth.uid)/following/$(creatorId))
+            && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/following/$(creatorId))
+          ) ||
+          // Action 3: Atomic Unfollow (-1) paired with deleting /users/{uid}/following/{creatorId}
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['followerCount', 'updatedAt'])
+            && incoming().followerCount == existing().followerCount - 1
+            && existing().followerCount >= 1
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid)/following/$(creatorId))
+            && !existsAfter(/databases/$(database)/documents/users/$(request.auth.uid)/following/$(creatorId))
+          ) ||
+          // Action 4: Atomic Gift Diamond Credit paired with sender coin debit
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly(['diamondTotal', 'updatedAt'])
+            && (incoming().diamondTotal - existing().diamondTotal) in [10, 50, 250, 1000]
+            && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.coinBalance ==
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.coinBalance - (incoming().diamondTotal - existing().diamondTotal)
+          )
+        );
+
+      allow delete: if isAdmin() && isValidId(creatorId);
+
+      // Live Room Chat Messages
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && isValidId(creatorId) && isValidId(messageId);
+        allow list: if isSignedIn() && resource.data.creatorId == creatorId;
+
+        allow create: if isVerifiedUser()
+          && isValidId(creatorId)
+          && isValidId(messageId)
+          && isValidRoomMessage(incoming(), creatorId, messageId)
+          && incoming().createdAt == request.time
+          && exists(/databases/$(database)/documents/creators/$(creatorId));
+
+        allow update: if false;
+        allow delete: if isVerifiedUser()
+          && isValidId(creatorId)
+          && isValidId(messageId)
+          && (isAdmin() || existing().senderUid == request.auth.uid);
+      }
+    }
+
+    // Live Broadcast Room Lifecycle
+    match /liveRooms/{roomId} {
+      allow get: if isSignedIn() && isValidId(roomId);
+      allow list: if isSignedIn() && resource.data.hostUid == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(roomId)
+        && isValidLiveRoom(incoming(), roomId)
+        && incoming().creatorId == request.auth.uid
+        && incoming().status == 'live'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdultConfirmed == true
+        && existsAfter(/databases/$(database)/documents/creators/$(request.auth.uid));
+
+      allow update: if isVerifiedUser()
+        && isValidId(roomId)
+        && isValidLiveRoom(incoming(), roomId)
+        && incoming().roomId == existing().roomId
+        && incoming().creatorId == existing().creatorId
+        && incoming().hostUid == existing().hostUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().hostUid == request.auth.uid
+            && existing().status == 'live'
+            && incoming().status == 'ended'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isAdmin() && isValidId(roomId);
+    }
+  }
+}

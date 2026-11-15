@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    /* Midnight (default deep dark) */
+    --lq-bg: #09090b;
+    --lq-bg-nav: rgba(9, 9, 11, 0.94);
+    --lq-surface: #111114;
+    --lq-surface-alt: #18181b;
+    --lq-surface-inset: #09090b;
+    --lq-border: rgba(39, 39, 42, 0.85);
+    --lq-text: #f4f4f5;
+    --lq-text-muted: #a1a1aa;
+  }
+
+  :root[data-theme="dim"] {
+    /* Dim (lighter, muted slate dark) */
+    --lq-bg: #181d26;
+    --lq-bg-nav: rgba(24, 29, 38, 0.94);
+    --lq-surface: #212834;
+    --lq-surface-alt: #2a3342;
+    --lq-surface-inset: #151a22;
+    --lq-border: rgba(71, 85, 105, 0.55);
+    --lq-text: #edf1f7;
+    --lq-text-muted: #a3b1c6;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--lq-bg);
+    color: var(--lq-text);
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
